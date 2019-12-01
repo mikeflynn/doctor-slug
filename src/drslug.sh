@@ -51,16 +51,30 @@ function report {
 
 }
 
-function printResult {
+function printWarning {
+	echo "[i] $1"
+}
 
+function printInfo {
+	echo "[i] $1"
+}
+
+function printError {
+	echo "[x] $1"
 }
 
 function initialize {
+	os="$(/usr/bin/uname -s)"
 
+	if [[ "${os}" != "Darwin" ]]; then
+		printError "[x] Dr. Slug only works on macOS."
+		exit 1
+	fi
 }
 
 function shutdown {
-
+	echo "Dr. Slug is shutting down..."
+	exit 0
 }
 
 function main {
