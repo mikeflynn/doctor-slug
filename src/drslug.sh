@@ -4,66 +4,105 @@ DOFIX=0
 
 cat << "EOF"
 
- ▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄          ▄▄▄▄▄▄▄▄▄▄▄  ▄            ▄         ▄  ▄▄▄▄▄▄▄▄▄▄▄ 
+ ▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄          ▄▄▄▄▄▄▄▄▄▄▄  ▄            ▄         ▄  ▄▄▄▄▄▄▄▄▄▄▄
 ▐░░░░░░░░░░▌ ▐░░░░░░░░░░░▌        ▐░░░░░░░░░░░▌▐░▌          ▐░▌       ▐░▌▐░░░░░░░░░░░▌
-▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀█░▌        ▐░█▀▀▀▀▀▀▀▀▀ ▐░▌          ▐░▌       ▐░▌▐░█▀▀▀▀▀▀▀▀▀ 
-▐░▌       ▐░▌▐░▌       ▐░▌        ▐░▌          ▐░▌          ▐░▌       ▐░▌▐░▌          
-▐░▌       ▐░▌▐░█▄▄▄▄▄▄▄█░▌        ▐░█▄▄▄▄▄▄▄▄▄ ▐░▌          ▐░▌       ▐░▌▐░▌ ▄▄▄▄▄▄▄▄ 
+▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀█░▌        ▐░█▀▀▀▀▀▀▀▀▀ ▐░▌          ▐░▌       ▐░▌▐░█▀▀▀▀▀▀▀▀▀
+▐░▌       ▐░▌▐░▌       ▐░▌        ▐░▌          ▐░▌          ▐░▌       ▐░▌▐░▌
+▐░▌       ▐░▌▐░█▄▄▄▄▄▄▄█░▌        ▐░█▄▄▄▄▄▄▄▄▄ ▐░▌          ▐░▌       ▐░▌▐░▌ ▄▄▄▄▄▄▄▄
 ▐░▌       ▐░▌▐░░░░░░░░░░░▌        ▐░░░░░░░░░░░▌▐░▌          ▐░▌       ▐░▌▐░▌▐░░░░░░░░▌
 ▐░▌       ▐░▌▐░█▀▀▀▀█░█▀▀          ▀▀▀▀▀▀▀▀▀█░▌▐░▌          ▐░▌       ▐░▌▐░▌ ▀▀▀▀▀▀█░▌
 ▐░▌       ▐░▌▐░▌     ▐░▌                    ▐░▌▐░▌          ▐░▌       ▐░▌▐░▌       ▐░▌
 ▐░█▄▄▄▄▄▄▄█░▌▐░▌      ▐░▌  ▄       ▄▄▄▄▄▄▄▄▄█░▌▐░█▄▄▄▄▄▄▄▄▄ ▐░█▄▄▄▄▄▄▄█░▌▐░█▄▄▄▄▄▄▄█░▌
 ▐░░░░░░░░░░▌ ▐░▌       ▐░▌▐░▌     ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌
- ▀▀▀▀▀▀▀▀▀▀   ▀         ▀  ▀       ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀ 
+ ▀▀▀▀▀▀▀▀▀▀   ▀         ▀  ▀       ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀
 
-An automated macOS security update script.                                                                                      
+An automated macOS security update script.
 EOF
 
-: <<'END'
+: <<'COMMENT'
 ## Process
 
+Initialization:
 * Check if running as standard user, and request sudo access.
+
+Discovery:
 * Check if running latest macOS version.
 * Check for automatic system upates.
 * Check for automatic app updates.
+* Set login banner.
+
+Security:
 * Check for Gatekeeper.
 * Check firewall status.
 * Check admin system settings policy.
 * Check on System Integrity Protection (SIP) status.
-* Check Filevault Status
+* Check Filevault Status.
 * Loading remote content in Mail setting.
 * Check Remote Desktop setting.
 * Check remote login setting.
-* Check auto-open safe downloads setting.
 * Check on AirDrop access.
-* Check kernel extension user consent setting.
 * Check EFI integrity.
+* Check auto-open safe downloads setting.
+* Check kernel extension user consent setting.
+* Login user list policy.
+
+Network:
 * Check if SSH is running.
-* List unknown Launch Agents.
+* Update SSH settings.
+* Check open ports.
+* Restrict remote management.
+
+Applications:
 * Search for unapproved software.
-END
+* List browsers and extensions.
+* Cloud storage applications.
 
-function sendMail {
+Services:
+* List unknown Launch Agents.
+* Media insertion actions.
+* List cron jobs.
+
+COMMENT
+
+if [ "$(id -u "$(whoami)")" != "0" ]; then
+    echo "Dr. Slug needs root! Goodbye."
+    exit 1
+fi
+
+# Flags
+
+DO_FIX=""
+OUTPUT=""
+EMAIL=""
+VERBOSE=""
+
+# State
+
+discovery() {
 
 }
 
-function report {
+sendMail() {
 
 }
 
-function printWarning {
+report() {
+
+}
+
+printWarning() {
 	echo "[i] $1"
 }
 
-function printInfo {
+printInfo() {
 	echo "[i] $1"
 }
 
-function printError {
+printError() {
 	echo "[x] $1"
 }
 
-function initialize {
+initialize() {
 	os="$(/usr/bin/uname -s)"
 
 	if [[ "${os}" != "Darwin" ]]; then
@@ -72,12 +111,12 @@ function initialize {
 	fi
 }
 
-function shutdown {
+shutdown() {
 	echo "Dr. Slug is shutting down..."
 	exit 0
 }
 
-function main {
+main() {
 	initialize
 
 	declare -r cmd=${1:-"usage"}
@@ -95,31 +134,35 @@ function main {
 				echo "* --email		Email a copy of the output to a specified email address."
 				echo "* --help; -h 	Prints help message"
 				echo "* --version		Prints version info."
-				echo "* --verbose		Extra deubg messages to stdout."				
+				echo "* --verbose		Extra deubg messages to stdout."
 				exit 0
 				;;
 			-f | --fix
-				export FIX=1
+				DO_FIX=1
 				;;
 			-o | --output
 				shift
-				export OUTPUT=$1
+				OUTPUT=$1
 				;;
 			-e | --email
-				shift 
-				export EMAIL=$1
+				shift
+				EMAIL=$1
 				;;
 			--version
 				echo "Version 1.0"
 				;;
 			-v | --verbose
-				export VERBOSE=1
+				VERBOSE=1
 				;;
 			*)
 				break
 				;;
 		esac
 	done
+
+	discovery
+
+
 }
 
 main "$@"
