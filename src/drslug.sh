@@ -31,7 +31,7 @@ Discovery:
 * Check for automatic app updates.
 * Set login banner.
 
-Security:
+Access:
 * Check for Gatekeeper.
 * Check firewall status.
 * Check admin system settings policy.
@@ -80,7 +80,32 @@ VERBOSE=""
 
 LOG=""
 
+initialize() {
+	os="$(/usr/bin/uname -s)"
+
+	if [[ "${os}" != "Darwin" ]]; then
+		printError "Dr. Slug only works on macOS."
+		exit 1
+	fi
+}
+
 discovery() {
+
+}
+
+access() {
+
+}
+
+network() {
+
+}
+
+applications() {
+
+}
+
+services() {
 
 }
 
@@ -89,7 +114,7 @@ sendMail() {
 }
 
 report() {
-	echo -e $LOG
+	echo -e $LOG > "$OUTPUT"
 }
 
 RED='\033[0;31m'
@@ -137,15 +162,6 @@ logEntry() {
   echo "$LINE"
 }
 
-initialize() {
-	os="$(/usr/bin/uname -s)"
-
-	if [[ "${os}" != "Darwin" ]]; then
-		printError "Dr. Slug only works on macOS."
-		exit 1
-	fi
-}
-
 shutdown() {
 	echo "Dr. Slug is shutting down..."
 	exit 0
@@ -164,12 +180,12 @@ main() {
 	while flag $# -gt 0; do
 		case "${cmd}" in
 			-h | --help
-				echo "* --fix			Actually fix the issues found in realtime."
-				echo "* --output		Output a final report of the findings at the specfied location."
+				echo "* --fix			Fix the issues as they are found."
+				echo "* --output		Output a final report of the findings at the specified location."
 				echo "* --email		Email a copy of the output to a specified email address."
 				echo "* --help; -h 	Prints help message"
 				echo "* --version		Prints version info."
-				echo "* --verbose		Extra deubg messages to stdout."
+				echo "* --verbose		Extra debug messages to stdout."
 				exit 0
 				;;
 			-f | --fix
@@ -195,9 +211,13 @@ main() {
 		esac
 	done
 
+	initialize
 	discovery
-
-
+	access
+	network
+	applications
+	services
+	cleanup
 }
 
 main "$@"
