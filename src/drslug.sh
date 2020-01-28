@@ -78,6 +78,8 @@ VERBOSE=""
 
 # State
 
+LOG=""
+
 discovery() {
 
 }
@@ -87,26 +89,59 @@ sendMail() {
 }
 
 report() {
-
+	echo -e $LOG
 }
 
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
 printWarning() {
-	echo "[i] $1"
+  echo -e ${YELLOW}[!]${NC} $1
 }
 
 printInfo() {
-	echo "[i] $1"
+  echo -e ${BLUE}[i]${NC} $1
 }
 
 printError() {
-	echo "[x] $1"
+  echo -e ${RED}[x]${NC} $1
+}
+
+printSuccess() {
+  echo -e ${RED}[x]${NC} $1
+}
+
+logEntry() {
+	case "$1" in
+		info)
+			LINE="$(printInfo "$2")"
+			;;
+		warning)
+			LINE="$(printWarning "$2")"
+			;;
+		error)
+			LINE="$(printError "$2")"
+			;;
+		success)
+			LINE="$(printSuccess "$2")"
+			;;
+		*)
+			LINE="$(printError "$2")"
+			;;
+	esac
+
+  LOG="${LOG}\n${LINE}"
+  echo "$LINE"
 }
 
 initialize() {
 	os="$(/usr/bin/uname -s)"
 
 	if [[ "${os}" != "Darwin" ]]; then
-		printError "[x] Dr. Slug only works on macOS."
+		printError "Dr. Slug only works on macOS."
 		exit 1
 	fi
 }
