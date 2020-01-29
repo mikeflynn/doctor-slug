@@ -107,25 +107,25 @@ discovery() {
 # Access
 
 access() {
-	logEntry "info" "Access tests are not yet implemented."
+	logEntry "warning" "Access tests are not yet implemented."
 }
 
 # Network
 
 network() {
-	logEntry "info" "Network tests are not yet implemented."
+	logEntry "warning" "Network tests are not yet implemented."
 }
 
 # Applications
 
 applications() {
-	logEntry "info" "Applications tests are not yet implemented."
+	logEntry "warning" "Applications tests are not yet implemented."
 }
 
 # Services
 
 services() {
-	logEntry "info" "Services tests are not yet implemented."
+	logEntry "warning" "Services tests are not yet implemented."
 }
 
 cleanup() {
