@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-DOFIX=0
-
 cat << "EOF"
 
  ▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄          ▄▄▄▄▄▄▄▄▄▄▄  ▄            ▄         ▄  ▄▄▄▄▄▄▄▄▄▄▄
@@ -26,10 +24,11 @@ Initialization:
 * Check if running as standard user, and request sudo access.
 
 Discovery:
-* Check if running latest macOS version.
+* Check macOS version.
 * Check for automatic system upates.
 * Check for automatic app updates.
 * Set login banner.
+* List users.
 
 Access:
 * Check for Gatekeeper.
@@ -73,44 +72,70 @@ fi
 
 DO_FIX=""
 OUTPUT=""
-EMAIL=""
 VERBOSE=""
 
 # State
 
 LOG=""
 
-initialize() {
+systemcheck() {
 	os="$(/usr/bin/uname -s)"
 
 	if [[ "${os}" != "Darwin" ]]; then
-		printError "Dr. Slug only works on macOS."
+		logEntry "error" "Dr. Slug only works on macOS."
 		exit 1
 	fi
 }
 
-discovery() {
-
+initialize() {
+	echo -e "\nSystem scan starting up...\n"
 }
+
+# Discovery
+
+getOSVersion() {
+	osv=$(sw_vers | grep ProductVersion | cut -d':' -f2 | xargs)
+
+	logEntry "info" "You are running macOS $osv"
+}
+
+
+discovery() {
+	getOSVersion
+}
+
+# Access
 
 access() {
-
+	logEntry "info" "Access tests are not yet implemented."
 }
+
+# Network
 
 network() {
-
+	logEntry "info" "Network tests are not yet implemented."
 }
+
+# Applications
 
 applications() {
-
+	logEntry "info" "Applications tests are not yet implemented."
 }
+
+# Services
 
 services() {
-
+	logEntry "info" "Services tests are not yet implemented."
 }
 
-sendMail() {
+cleanup() {
+	exit 0
+}
 
+# Utils
+
+sendMail() {
+	exit 0
 }
 
 report() {
@@ -168,48 +193,30 @@ shutdown() {
 }
 
 main() {
-	initialize
-
-	declare -r cmd=${1:-"usage"}
-	declare -a tests
+	systemcheck
 
 	tests={}
 
 	trap shutdown SIGINT
 
-	while flag $# -gt 0; do
-		case "${cmd}" in
-			-h | --help
-				echo "* --fix			Fix the issues as they are found."
-				echo "* --output		Output a final report of the findings at the specified location."
-				echo "* --email		Email a copy of the output to a specified email address."
-				echo "* --help; -h 	Prints help message"
-				echo "* --version		Prints version info."
-				echo "* --verbose		Extra debug messages to stdout."
-				exit 0
-				;;
-			-f | --fix
-				DO_FIX=1
-				;;
-			-o | --output
-				shift
-				OUTPUT=$1
-				;;
-			-e | --email
-				shift
-				EMAIL=$1
-				;;
-			--version
-				echo "Version 1.0"
-				;;
-			-v | --verbose
-				VERBOSE=1
-				;;
-			*)
-				break
-				;;
-		esac
-	done
+	if [ "$1" = "-h" ]; then
+		usage="\n
+Flags:\n
+\t-h 	--> Prints this help message\n
+\n
+\tEx: ./drslug.sh -h\n
+\n
+Options:\n
+\tEMAIL: Optionally email the report to this user.\n
+\tFIX: If true, will apply fixes where needed as the tests are run.\n
+\tOUTPUT: If set, overrides the default report output location.\n
+\n
+\tEx: sudo EMAIL=test@test.com ./drslug.sh\n
+		"
+
+		echo -e $usage
+		exit 0
+	fi
 
 	initialize
 	discovery
