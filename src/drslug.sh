@@ -39,20 +39,18 @@ Access:
 * Check admin system settings policy.
 * Check on System Integrity Protection (SIP) status.
 * Check Filevault Status.
-* Loading remote content in Mail setting.
-* Check Remote Desktop setting.
-* Check remote login setting.
-* Check on AirDrop access.
-* Check EFI integrity.
-* Check auto-open safe downloads setting.
 * Check kernel extension user consent setting.
-* Login user list policy.
 
 Network:
-* Check if SSH is running.
-* Update SSH settings.
 * Check open ports.
 * Restrict remote management.
+* Loading remote content in Mail setting.
+* Check auto-open safe downloads setting.
+* Check on AirDrop access.
+* Check if SSH is running.
+* Update SSH settings.
+* Check Remote Desktop setting.
+* Check remote login setting.
 
 Applications:
 * Search for unapproved software.
@@ -82,7 +80,7 @@ VERBOSE=false
 LOG=""
 
 systemcheck() {
-	os="$(/usr/bin/uname -s)"
+	local os="$(/usr/bin/uname -s)"
 
 	if [[ "${os}" != "Darwin" ]]; then
 		logEntry "error" "Dr. Slug only works on macOS."
@@ -97,45 +95,45 @@ initialize() {
 # Discovery
 
 getOSVersion() {
-	osv=$(sw_vers | grep ProductVersion | cut -d':' -f2 | xargs)
+	local osv=$(sw_vers | grep ProductVersion | cut -d':' -f2 | xargs)
 
-	logEntry "info" "You are running macOS $osv"
+	logEntry "info" "macOS Version: $osv"
 }
 
 getMacAddress() {
-	ma=$(ifconfig en1 | awk '/ether/{print $2}')
+	local ma=$(ifconfig en1 | awk '/ether/{print $2}')
 
 	logEntry "info" "MAC Address: $ma"
 }
 
 getLocalIP() {
-	ip=$(ipconfig getifaddr en0)
+	local ip=$(ipconfig getifaddr en0)
 
 	logEntry "info" "Local IP: $ip"
 }
 
 getSerialNumber() {
-	sn=$(system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
+	local sn=$(system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
 
 	logEntry "info" "Serial Number: $sn"
 }
 
 getUpdateStatus() {
-	automaticSysUpdates=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate.plist | grep AutomaticallyInstallMacOSUpdates | awk '{print $3}' | tr -d ';')
+	local automaticSysUpdates=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate.plist | grep AutomaticallyInstallMacOSUpdates | awk '{print $3}' | tr -d ';')
 	if [ "$automaticSysUpdates" = "0" ]; then
 		logEntry "error" "Automatic system updates are turned off."
 	else
 		logEntry "success" "Automatic system updates are turned on."
 	fi
 
-	pendingUpdates=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate.plist | grep LastRecommendedUpdatesAvailable | awk '{print $3}' | tr -d ';')
+	local pendingUpdates=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate.plist | grep LastRecommendedUpdatesAvailable | awk '{print $3}' | tr -d ';')
 	if [ "$pendingUpdates" = "0" ]; then
 		logEntry "success" "macOS is up-to-date!"
 	else
 		logEntry "error" "You have pending macOS updates."
 	fi
 
-	appUpdates=$(defaults read /Library/Preferences/com.apple.commerce.plist AutoUpdate)
+	local appUpdates=$(defaults read /Library/Preferences/com.apple.commerce.plist AutoUpdate)
 	if [ "$appUpdates" = "0" ]; then
 		logEntry "error" "Automatic application updates are turned off."
 	else
@@ -155,7 +153,7 @@ fixUpdateStatus() {
 }
 
 listUsers() {
-	users=$(dscacheutil -q user | grep -A 3 -B 2 -e uid:\ 5'[0-9][0-9]' | grep name | awk '/name:/ {print $2}' | paste -s -d, -)
+	local users=$(dscacheutil -q user | grep -A 3 -B 2 -e uid:\ 5'[0-9][0-9]' | grep name | awk '/name:/ {print $2}' | paste -s -d, -)
 
 	logEntry "info" "Local users: $users"
 }
@@ -182,9 +180,64 @@ discovery() {
 
 # Access
 
+gatekeeperCheck() {
+	gk="$(spctl --status -v)"
+	local gk_on="$(echo $gk | grep -c "assessments enabled")"
+	local di_on="$(echo $gk | grep -c "developer id enabled")"
+
+	if [ "$di_on" = "1" ]; then
+		logEntry "warning" "Gatekeeper allows apps from App Store and ID'd Developers"
+	elif [ "$gk_on" == "1"]; then
+		logEntry "success" "Gatekeeper only allows App Store apps."
+	else
+		logEntry "error" "Gatekeeper is turned off."
+	fi
+}
+
+firewallCheck() {
+	local fw=$(defaults read /Library/Preferences/com.apple.alf globalstate)
+
+	if [ "$fw" = "0" ]; then
+		logEntry "error" "The system firewall is turned off."
+	else
+		logEntry "success" "The firewall is active."
+	fi
+}
+
+SIPCheck() {
+	if [ "$(csrutil status)" = "System Integrity Protection status: enabled." ]; then
+		logEntry "success" "System Integrity Protection (SIP) is active."
+	else
+		logEntry "error" "System Integrity Protection (SIP) has been turned off."
+	fi
+}
+
+filevaultCheck() {
+	if [ "$(fdesetup status)" = "FileVault is On." ]; then
+		logEntry "success" "The disk is encrypted by File Vault."
+	else
+		logEntry "warning" "File Vault is off and this disk may not be encrypted."
+	fi
+}
+
+listKernelExts() {
+	local exts=$(kextstat | grep -v com.apple | sed 1d | awk '{print $6}' | paste -s -d, -)
+
+	if [ "$exts" = "" ]; then
+		logEntry "success" "No active kernel extensions."
+	else
+		logEntry "warning" "Found installed kernel extensions: $exts"
+	fi
+}
+
 access() {
 	echo -e "\nSystem Access:\n"
-	logEntry "warning" "Access tests are not yet implemented."
+
+	gatekeeperCheck
+	firewallCheck
+	SIPCheck
+	filevaultCheck
+	listKernelExts
 }
 
 # Network
@@ -241,7 +294,7 @@ printError() {
 }
 
 printSuccess() {
-  echo -e ${RED}[x]${NC} $1
+  echo -e ${GREEN}[✔︎]${NC} $1
 }
 
 logEntry() {
