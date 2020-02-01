@@ -25,6 +25,9 @@ Initialization:
 
 Discovery:
 * Check macOS version.
+* List MAC Addres
+* List local IP
+* List Serial Number
 * Check for automatic system upates.
 * Check for automatic app updates.
 * Set login banner.
@@ -70,9 +73,9 @@ fi
 
 # Flags
 
-DO_FIX=""
+DO_FIX=false
 OUTPUT=""
-VERBOSE=""
+VERBOSE=false
 
 # State
 
@@ -99,32 +102,109 @@ getOSVersion() {
 	logEntry "info" "You are running macOS $osv"
 }
 
+getMacAddress() {
+	ma=$(ifconfig en1 | awk '/ether/{print $2}')
+
+	logEntry "info" "MAC Address: $ma"
+}
+
+getLocalIP() {
+	ip=$(ipconfig getifaddr en0)
+
+	logEntry "info" "Local IP: $ip"
+}
+
+getSerialNumber() {
+	sn=$(system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
+
+	logEntry "info" "Serial Number: $sn"
+}
+
+getUpdateStatus() {
+	automaticSysUpdates=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate.plist | grep AutomaticallyInstallMacOSUpdates | awk '{print $3}' | tr -d ';')
+	if [ "$automaticSysUpdates" = "0" ]; then
+		logEntry "error" "Automatic system updates are turned off."
+	else
+		logEntry "success" "Automatic system updates are turned on."
+	fi
+
+	pendingUpdates=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate.plist | grep LastRecommendedUpdatesAvailable | awk '{print $3}' | tr -d ';')
+	if [ "$pendingUpdates" = "0" ]; then
+		logEntry "success" "macOS is up-to-date!"
+	else
+		logEntry "error" "You have pending macOS updates."
+	fi
+
+	appUpdates=$(defaults read /Library/Preferences/com.apple.commerce.plist AutoUpdate)
+	if [ "$appUpdates" = "0" ]; then
+		logEntry "error" "Automatic application updates are turned off."
+	else
+		logEntry "success" "Automatic application updates are turned on."
+	fi
+}
+
+fixUpdateStatus() {
+	/usr/bin/defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist AutomaticCheckEnabled -bool TRUE
+	/usr/bin/defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist AutomaticDownload -bool TRUE
+	/usr/bin/defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist AutomaticallyInstallMacOSUpdates -bool TRUE
+	/usr/bin/defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist ConfigDataInstall -bool TRUE
+	/usr/bin/defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist CriticalUpdateInstall -bool TRUE
+	/usr/bin/defaults write /Library/Preferences/com.apple.commerce.plist AutoUpdate -bool TRUE
+
+	logEntry "success" "Automatic update settings have been updated."
+}
+
+listUsers() {
+	users=$(dscacheutil -q user | grep -A 3 -B 2 -e uid:\ 5'[0-9][0-9]' | grep name | awk '/name:/ {print $2}' | paste -s -d, -)
+
+	logEntry "info" "Local users: $users"
+}
+
+checkPolicyBanner() {
+	if [ -f "/Library/Security/PolicyBanner" ]; then
+		logEntry "success" "Policy banner is in place."
+	else
+		logEntry "warning" "No policy banner has been set."
+	fi
+}
 
 discovery() {
+	echo -e "System Discovery:\n"
+
 	getOSVersion
+	getMacAddress
+	getLocalIP
+	getSerialNumber
+	listUsers
+	getUpdateStatus
+	checkPolicyBanner
 }
 
 # Access
 
 access() {
+	echo -e "\nSystem Access:\n"
 	logEntry "warning" "Access tests are not yet implemented."
 }
 
 # Network
 
 network() {
+	echo -e "\nNetwork Connectivity:\n"
 	logEntry "warning" "Network tests are not yet implemented."
 }
 
 # Applications
 
 applications() {
+	echo -e "\nApplications:\n"
 	logEntry "warning" "Applications tests are not yet implemented."
 }
 
 # Services
 
 services() {
+	echo -e "\nServices:\n"
 	logEntry "warning" "Services tests are not yet implemented."
 }
 
