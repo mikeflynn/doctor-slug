@@ -243,7 +243,7 @@ access() {
 
 listOpenPorts() {
 	local ports
-	ports=$(lsof -Pn -i4 | grep LISTEN)
+	ports=$(lsof -Pn -i4 | grep LISTEN | awk '{print $1,$8,$9}')
 
 	logEntry "info" "Open ports identified:\n$ports"
 }
