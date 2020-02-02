@@ -43,24 +43,16 @@ Access:
 
 Network:
 * Check open ports.
-* Restrict remote management.
-* Loading remote content in Mail setting.
-* Check auto-open safe downloads setting.
-* Check on AirDrop access.
+* Check if Screen Sharing is running.
 * Check if SSH is running.
-* Update SSH settings.
-* Check Remote Desktop setting.
-* Check remote login setting.
-
-Applications:
-* Search for unapproved software.
-* List browsers and extensions.
-* Cloud storage applications.
 
 Services:
 * List unknown Launch Agents.
-* Media insertion actions.
 * List cron jobs.
+
+Applications:
+* List browsers and extensions.
+* Cloud storage applications.
 
 COMMENT
 
@@ -77,6 +69,7 @@ VERBOSE=false
 
 # State
 
+THISUSER="$USER"
 LOG=""
 
 systemcheck() {
@@ -90,6 +83,12 @@ systemcheck() {
 
 initialize() {
 	echo -e "\nSystem scan starting up...\n"
+
+	if [ "$THISUSER" == "root" ]; then
+		THISUSER="$SUDO_USER"
+	fi
+
+	echo -e "Running as $THISUSER on $(date '+%Y-%m-%d')\n"
 }
 
 # Discovery
@@ -182,12 +181,12 @@ discovery() {
 
 gatekeeperCheck() {
 	gk="$(spctl --status -v)"
-	local gk_on="$(echo $gk | grep -c "assessments enabled")"
-	local di_on="$(echo $gk | grep -c "developer id enabled")"
+	local gk_on="$(echo "$gk" | grep -c "assessments enabled")"
+	local di_on="$(echo "$gk" | grep -c "developer id enabled")"
 
 	if [ "$di_on" = "1" ]; then
 		logEntry "warning" "Gatekeeper allows apps from App Store and ID'd Developers"
-	elif [ "$gk_on" == "1"]; then
+	elif [ "$gk_on" == "1" ]; then
 		logEntry "success" "Gatekeeper only allows App Store apps."
 	else
 		logEntry "error" "Gatekeeper is turned off."
@@ -242,37 +241,118 @@ access() {
 
 # Network
 
-network() {
-	echo -e "\nNetwork Connectivity:\n"
-	logEntry "warning" "Network tests are not yet implemented."
+listOpenPorts() {
+	local ports
+	ports=$(lsof -Pn -i4 | grep LISTEN)
+
+	logEntry "info" "Open ports identified:\n$ports"
 }
 
-# Applications
+screenSharingStatus() {
+	local sss
+	sss=$([[ -f /etc/RemoteManagement.launchd ]] && echo 'enabled' || echo 'disabled')
 
-applications() {
-	echo -e "\nApplications:\n"
-	logEntry "warning" "Applications tests are not yet implemented."
+	if [ "$sss" = "enabled" ]; then
+		logEntry "error" "Screen Sharing service is enabled."
+	else
+		logEntry "success" "Screen Sharing service is off."
+	fi
+}
+
+SSHStatus() {
+	local status
+	status=$(systemsetup -getremotelogin | awk '{print $3}')
+
+	if [ "$status" = "On" ]; then
+		logEntry "error" "Remote Login service is on."
+	else
+		logEntry "success" "Remote Login service is off."
+	fi
+}
+
+network() {
+	echo -e "\nNetwork Connectivity:\n"
+
+	listOpenPorts
+	screenSharingStatus
+	SSHStatus
 }
 
 # Services
 
+listLaunchAgents() {
+	local agents
+	agents=$(launchctl list | grep -v apple | awk '{print $3}' | sed 1d)
+
+	logEntry "warning" "The following non-Apple launch agents have been found:\n$agents"
+}
+
+listCron() {
+	local cj
+	cj=$(crontab -l)
+
+	if [ "$cj" = "" ]; then
+		logEntry "success" "No cron jobs found."
+	else
+		logEntry "warning" "The following cron jobs were found: $cj"
+	fi
+}
+
 services() {
 	echo -e "\nServices:\n"
-	logEntry "warning" "Services tests are not yet implemented."
+
+	listLaunchAgents
 }
+
+# Applications
+
+listBrowsers() {
+	if [ -d "/Applications/Google Chrome.app" ]; then
+		logEntry "info" "Google Chrome is installed."
+
+		local exts
+		exts=$(ls -l ~/Library/Application\ Support/Google/Chrome/Default/Extensions | wc -l | xargs)
+		logEntry "info" "Google Chrome extension count: $exts"
+	fi
+
+	if [ -d "/Applications/Safari.app" ]; then
+		logEntry "info" "Safari is installed."
+	fi
+
+	if [ -d "/Applications/Firefox.app" ]; then
+		logEntry "info" "Firefox is installed."
+	fi
+}
+
+fileSharers() {
+	if [ -d "/Applications/Dropbox.app" ]; then
+		logEntry "info" "Dropbox is installed."
+	fi
+
+	if [ -d "/Applications/OneDrive.app" ]; then
+		logEntry "info" "OneDrive is installed."
+	fi
+}
+
+applications() {
+	echo -e "\nApplications:\n"
+
+	listBrowsers
+	fileSharers
+}
+
+# Utils
 
 cleanup() {
 	exit 0
 }
-
-# Utils
 
 sendMail() {
 	exit 0
 }
 
 report() {
-	echo -e $LOG > "$OUTPUT"
+	echo -e "$LOG" > "$OUTPUT"
 }
 
 RED='\033[0;31m'
@@ -282,19 +362,19 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 printWarning() {
-  echo -e ${YELLOW}[!]${NC} $1
+  echo -e "${YELLOW}"[!]"${NC}" "$1"
 }
 
 printInfo() {
-  echo -e ${BLUE}[i]${NC} $1
+  echo -e "${BLUE}"[i]"${NC}" "$1"
 }
 
 printError() {
-  echo -e ${RED}[x]${NC} $1
+  echo -e "${RED}"[x]"${NC}" "$1"
 }
 
 printSuccess() {
-  echo -e ${GREEN}[✔︎]${NC} $1
+  echo -e "${GREEN}"[✔︎]"${NC}" "$1"
 }
 
 logEntry() {
@@ -347,7 +427,7 @@ Options:\n
 \tEx: sudo EMAIL=test@test.com ./drslug.sh\n
 		"
 
-		echo -e $usage
+		echo -e "$usage"
 		exit 0
 	fi
 
@@ -355,8 +435,8 @@ Options:\n
 	discovery
 	access
 	network
-	applications
 	services
+	applications
 	cleanup
 }
 
