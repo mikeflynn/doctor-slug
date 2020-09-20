@@ -32,6 +32,7 @@ Discovery:
 * Check for automatic app updates.
 * Set login banner.
 * List users.
+* List recent terminal commands.
 
 Access:
 * Check for Gatekeeper.
@@ -111,6 +112,12 @@ getLocalIP() {
 	logEntry "info" "Local IP: $ip"
 }
 
+getTerminalHistory() {
+	local history=$(history -25)
+
+	logEntry "info" "Terminal History:\n$history\n"
+}
+
 getSerialNumber() {
 	local sn=$(system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
 
@@ -175,6 +182,7 @@ discovery() {
 	listUsers
 	getUpdateStatus
 	checkPolicyBanner
+	getTerminalHistory
 }
 
 # Access
